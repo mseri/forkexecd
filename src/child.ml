@@ -204,8 +204,9 @@ let run state comms_sock fd_sock fd_sock_path =
 			Unix.execve name (Array.of_list args) (Array.of_list state.env)
 		end else begin
 			Fecomms.write_raw_rpc comms_sock (Fe.Execed result);
+      Thread.delay (Random.float 2.0);
 
-			List.iter (fun fd -> Unix.close fd) fds;
+      List.iter (fun fd -> Unix.close fd) fds;
 
 			(* Close the end of the pipe that's only supposed to be written to by the child process. *)
 			Opt.iter Unix.close !out_childlogging;
@@ -226,7 +227,9 @@ let run state comms_sock fd_sock fd_sock_path =
 			 * 2) we weren't asked to log the child's stdout and it may still be
 			 *    running in the background.
 			 * We now temporarily block SIGCHLD to avoid a race. *)
+      Thread.delay (Random.float 2.0);
 			let (_ : int list) = Unix.sigprocmask Unix.SIG_BLOCK [Sys.sigchld] in
+      Thread.delay (Random.float 2.0);
 
 			(* First test whether the child has exited - if it has then report this
 			 * via the socket and exit. *)
@@ -237,15 +240,18 @@ let run state comms_sock fd_sock fd_sock_path =
 				exit 0
 			end
 			| _ -> ();
+      Thread.delay (Random.float 2.0);
 
-			(* At this point we know that the child is still running - set up a signal
+      (* At this point we know that the child is still running - set up a signal
 			 * handler to catch it exiting. *)
 			Sys.set_signal Sys.sigchld
 				(Sys.Signal_handle
 					(fun signum -> handle_sigchld comms_sock args result signum));
+      Thread.delay (Random.float 2.0);
 
 			(* Unblock SIGCHLD so that the handler comes into effect. *)
 			let (_ : int list) = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigchld] in
+      Thread.delay (Random.float 2.0);
 
 			(* While the signal handler watches for the child to exit, we wait for the
 			 * client to send us Dontwaitpid, which signals it won't ever want to
